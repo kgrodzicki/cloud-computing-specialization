@@ -1,6 +1,6 @@
 __author__ = 'grokrz'
 
-availability_of_single_replica = 0.85
+availability_of_single_replica = 0.95
 server_failure_probability = 1 - availability_of_single_replica
 max_number_of_servers = 8
 

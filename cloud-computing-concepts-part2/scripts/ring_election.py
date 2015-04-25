@@ -79,11 +79,12 @@ def print_ring(val):
         print value
 
 
-node_ids = [1, 2, 3, 4, 5]
+#node_ids = [1, 2, 3, 4, 5, 6, 7]
+node_ids = [1776, 1898, 1867, 1810, 1821, 1823, 1804]
 N = len(node_ids)
 
 ring = make_ring(node_ids)
-ring[2].initiate_leader_election()
+ring[1776].initiate_leader_election()
 # print_ring(ring)
 nr_of_messages = 0
 for k, v in ring.iteritems():
