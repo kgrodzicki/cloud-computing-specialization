@@ -3,6 +3,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -72,19 +73,28 @@ public class MP1 {
     public String[] process() throws Exception {
         String[] ret = new String[20];
 
-        Map<String, Integer> tokens = reduceAndSort(ignoreCommonWords(tokenize(titles())));
+        Map<String, Integer> tokens = reduceAndSort(ignoreCommonWords(tokenize(filterOutIndexes(titles()))));
 
         Iterator<Map.Entry<String, Integer>> iterator = tokens.entrySet().iterator();
         int idx = 0;
         while (iterator.hasNext()) {
             Map.Entry<String, Integer> elm = iterator.next();
-            out.printf("%s %d%n", elm.getKey(), elm.getValue());
+//            out.printf("%s %d%n", elm.getKey(), elm.getValue());
             if (idx < ret.length) {
                 ret[idx++] = elm.getKey();
             }
         }
 
         return ret;
+    }
+
+    private List<String> filterOutIndexes(List<String> titles) throws NoSuchAlgorithmException {
+        ArrayList<String> strings = new ArrayList<String>(titles);
+        LinkedList<String> result = new LinkedList<String>();
+        for (Integer idx : getIndexes()) {
+            result.add(strings.get(idx));
+        }
+        return result;
     }
 
     private Map<String, Integer> reduceAndSort(List<String> words) {
@@ -129,7 +139,7 @@ public class MP1 {
     }
 
     private List<String> titles() {
-        List<String> titles = new LinkedList<String>();
+        List<String> titles = new ArrayList<String>();
         Charset charset = forName("UTF-8");
         try {
             BufferedReader reader = newBufferedReader(get(inputFileName), charset);
@@ -167,7 +177,9 @@ public class MP1 {
 
         @Override
         public int compare(String o1, String o2) {
-            if (base.get(o1) >= base.get(o2)) {
+            if (base.get(o1) == base.get(o2)) {
+                return o1.compareTo(o2);
+            } else if (base.get(o1) > base.get(o2)) {
                 return -1;
             } else {
                 return 1;
