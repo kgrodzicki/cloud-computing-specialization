@@ -1,14 +1,34 @@
-import java.io.File;
-import java.lang.reflect.Array;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
+
+import static java.lang.System.out;
+import static java.nio.charset.Charset.forName;
+import static java.nio.file.Files.newBufferedReader;
+import static java.nio.file.Paths.get;
+import static java.util.Arrays.asList;
 
 public class MP1 {
+
     Random generator;
+
     String userName;
+
     String inputFileName;
+
     String delimiters = " \t,;.?!-:@[](){}_*/";
+
     String[] stopWordsArray = {"i", "me", "my", "myself", "we", "our", "ours", "ourselves", "you", "your", "yours",
             "yourself", "yourselves", "he", "him", "his", "himself", "she", "her", "hers", "herself", "it", "its",
             "itself", "they", "them", "their", "theirs", "themselves", "what", "which", "who", "whom", "this", "that",
@@ -51,23 +71,106 @@ public class MP1 {
 
     public String[] process() throws Exception {
         String[] ret = new String[20];
-       
-        //TODO
+
+        Map<String, Integer> tokens = reduceAndSort(ignoreCommonWords(tokenize(titles())));
+
+        Iterator<Map.Entry<String, Integer>> iterator = tokens.entrySet().iterator();
+        int idx = 0;
+        while (iterator.hasNext()) {
+            Map.Entry<String, Integer> elm = iterator.next();
+            out.printf("%s %d%n", elm.getKey(), elm.getValue());
+            if (idx < ret.length) {
+                ret[idx++] = elm.getKey();
+            }
+        }
 
         return ret;
     }
 
-    public static void main(String[] args) throws Exception {
-        if (args.length < 1){
-            System.out.println("MP1 <User ID>");
+    private Map<String, Integer> reduceAndSort(List<String> words) {
+        HashMap<String, Integer> result = new HashMap<String, Integer>();
+        for (String each : words) {
+            if (!result.containsKey(each)) {
+                result.put(each, 1);
+            } else {
+                result.put(each, result.get(each) + 1);
+            }
         }
-        else {
+
+        return sort(result);
+    }
+
+    private Map<String, Integer> sort(HashMap<String, Integer> result) {
+        TreeMap sorted = new TreeMap(new ValueComparator(result));
+        sorted.putAll(result);
+        return sorted;
+    }
+
+    private List<String> ignoreCommonWords(List<String> words) {
+        List<String> result = new LinkedList<String>();
+        List<String> stopWords = asList(stopWordsArray);
+        for (String word : words) {
+            if (!stopWords.contains(word)) {
+                result.add(word);
+            }
+        }
+        return result;
+    }
+
+    private List<String> tokenize(List<String> titles) {
+        List<String> result = new LinkedList<String>();
+        for (String each : titles) {
+            StringTokenizer st = new StringTokenizer(each, delimiters);
+            while (st.hasMoreTokens()) {
+                result.add(st.nextToken().toLowerCase().trim());
+            }
+        }
+        return result;
+    }
+
+    private List<String> titles() {
+        List<String> titles = new LinkedList<String>();
+        Charset charset = forName("UTF-8");
+        try {
+            BufferedReader reader = newBufferedReader(get(inputFileName), charset);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                titles.add(line);
+            }
+        } catch (IOException x) {
+            System.err.format("IOException: %s%n", x);
+        }
+        return titles;
+    }
+
+    public static void main(String[] args) throws Exception {
+        if (args.length < 1) {
+            out.println("MP1 <User ID>");
+        } else {
             String userName = args[0];
             String inputFileName = "./input.txt";
             MP1 mp = new MP1(userName, inputFileName);
             String[] topItems = mp.process();
-            for (String item: topItems){
-                System.out.println(item);
+            for (String item : topItems) {
+                out.println(item);
+            }
+        }
+    }
+
+    private static class ValueComparator implements Comparator<String> {
+
+        private Map<String, Integer> base;
+
+        public ValueComparator(Map base) {
+            this.base = base;
+        }
+
+        @Override
+        public int compare(String o1, String o2) {
+            if (base.get(o1) >= base.get(o2)) {
+                return -1;
+            } else {
+                return 1;
             }
         }
     }
