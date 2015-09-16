@@ -9,13 +9,13 @@ import backtype.storm.tuple.Fields;
  */
 public class TopWordFinderTopologyPartB {
 
-  public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws Exception {
 
 
-    TopologyBuilder builder = new TopologyBuilder();
+        TopologyBuilder builder = new TopologyBuilder();
 
-    Config config = new Config();
-    config.setDebug(true);
+        Config config = new Config();
+        config.setDebug(true);
 
 
     /*
@@ -29,22 +29,22 @@ public class TopWordFinderTopologyPartB {
     WordCountBolt -> "count"
     ------------------------------------------------- */
 
-    String spoutId = "spout";
-    String splitId = "split";
-    String countId = "count";
+        String spoutId = "spout";
+        String splitId = "split";
+        String countId = "count";
 
-    builder.setSpout(spoutId, new FileReaderSpout(args[0]), 5);
-    builder.setBolt(splitId, new SplitSentenceBolt(), 8).shuffleGrouping(spoutId);
-    builder.setBolt(countId, new WordCountBolt(), 12).fieldsGrouping(splitId, new Fields("word"));
+        builder.setSpout(spoutId, new FileReaderSpout(args[0]), 5);
+        builder.setBolt(splitId, new SplitSentenceBolt(), 8).shuffleGrouping(spoutId);
+        builder.setBolt(countId, new WordCountBolt(), 12).fieldsGrouping(splitId, new Fields("word"));
 
-    config.setMaxTaskParallelism(3);
+        config.setMaxTaskParallelism(3);
 
-    LocalCluster cluster = new LocalCluster();
-    cluster.submitTopology("word-count", config, builder.createTopology());
+        LocalCluster cluster = new LocalCluster();
+        cluster.submitTopology("word-count", config, builder.createTopology());
 
-    //wait for 2 minutes and then kill the job
-    Thread.sleep( 2 * 60 * 1000);
+        //wait for 2 minutes and then kill the job
+        Thread.sleep(2 * 60 * 1000);
 
-    cluster.shutdown();
-  }
+        cluster.shutdown();
+    }
 }
