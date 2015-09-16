@@ -8,17 +8,18 @@ import backtype.storm.tuple.Values;
 
 public class SplitSentenceBolt extends BaseBasicBolt {
 
-@Override
-   public void execute(Tuple tuple, BasicOutputCollector collector) {
-       String sentence = tuple.getString(0);
-       String[]words=sentence.split("[\\s~`!@#$%^&*(-)+=_:;'\",.<>?/\\\\0-9"+"\\]\\[\\}\\{]+");
+    @Override
+    public void execute(Tuple tuple, BasicOutputCollector collector) {
+        String sentence = tuple.getString(0);
+        String[] words = sentence.split("[\\s~`!@#$%^&*(-)+=_:;'\",.<>?/\\\\0-9" + "\\]\\[\\}\\{]+");
 
-       for(String word:words){
-         collector.emit(new Values(word));
-       }
-   }
-   @Override
-   public void declareOutputFields(OutputFieldsDeclarer declarer) {
-     declarer.declare(new Fields("word"));
-   }
- }
+        for (String word : words) {
+            collector.emit(new Values(word));
+        }
+    }
+
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declare(new Fields("word"));
+    }
+}
