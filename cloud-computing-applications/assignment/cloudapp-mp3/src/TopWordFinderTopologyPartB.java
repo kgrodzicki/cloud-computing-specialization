@@ -1,14 +1,8 @@
 
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
-import backtype.storm.StormSubmitter;
-import backtype.storm.topology.BasicOutputCollector;
-import backtype.storm.topology.OutputFieldsDeclarer;
 import backtype.storm.topology.TopologyBuilder;
-import backtype.storm.topology.base.BaseBasicBolt;
 import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Tuple;
-import backtype.storm.tuple.Values;
 
 /**
  * This topology reads a file and counts the words in that file
@@ -33,11 +27,15 @@ public class TopWordFinderTopologyPartB {
     FileReaderSpout -> "spout"
     SplitSentenceBolt -> "split"
     WordCountBolt -> "count"
-
-
-
     ------------------------------------------------- */
 
+    String spoutId = "spout";
+    String splitId = "split";
+    String countId = "count";
+
+    builder.setSpout(spoutId, new FileReaderSpout(args[0]), 5);
+    builder.setBolt(splitId, new SplitSentenceBolt(), 8).shuffleGrouping(spoutId);
+    builder.setBolt(countId, new WordCountBolt(), 12).fieldsGrouping(splitId, new Fields("word"));
 
     config.setMaxTaskParallelism(3);
 
