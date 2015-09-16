@@ -1,6 +1,7 @@
 import backtype.storm.Config;
 import backtype.storm.LocalCluster;
 import backtype.storm.topology.TopologyBuilder;
+import backtype.storm.tuple.Fields;
 
 /**
  * This topology counts the words from sentences emmited from a random sentence spout.
@@ -27,9 +28,13 @@ public class TopWordFinderTopologyPartA {
 
 
     ------------------------------------------------- */
-        builder.setSpout("spout", new RandomSentenceSpout());
-        builder.setBolt("split", new SplitSentenceBolt());
-        builder.setBolt("count", new WordCountBolt());
+        String spoutId = "spout";
+        String splitId = "split";
+        String countId = "count";
+        
+        builder.setSpout(spoutId, new RandomSentenceSpout(), 5);
+        builder.setBolt(splitId, new SplitSentenceBolt(), 8).shuffleGrouping(spoutId);
+        builder.setBolt(countId, new WordCountBolt(), 12).fieldsGrouping(splitId, new Fields("word"));
 
         config.setMaxTaskParallelism(3);
 
