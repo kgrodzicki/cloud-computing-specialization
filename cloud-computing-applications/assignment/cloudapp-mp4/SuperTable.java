@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
 
 import java.io.IOException;
+import java.lang.String;
 
 import static org.apache.hadoop.hbase.util.Bytes.toBytes;
 
@@ -25,7 +26,8 @@ public class SuperTable {
         HBaseAdmin admin = new HBaseAdmin(con);
 
         // Instantiating table descriptor class
-        HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf("powers"));
+        String tableName = "powers";
+        HTableDescriptor tableDescriptor = new HTableDescriptor(TableName.valueOf(tableName));
 
         // Adding column families to table descriptor
         tableDescriptor.addFamily(new HColumnDescriptor("personal"));
@@ -35,7 +37,7 @@ public class SuperTable {
         admin.createTable(tableDescriptor);
         System.out.println(" Table created ");
 
-        HTable hTable = new HTable(con, "powers");
+        HTable hTable = new HTable(con, tableName);
 
         // Instantiating Put class
         // accepts a row name.
@@ -59,7 +61,7 @@ public class SuperTable {
 
 
         // Instantiating HTable class
-        HTable table = new HTable(con, "emp");
+        HTable table = new HTable(con, tableName);
 
         // Instantiating the Scan class
         Scan scan = new Scan();
