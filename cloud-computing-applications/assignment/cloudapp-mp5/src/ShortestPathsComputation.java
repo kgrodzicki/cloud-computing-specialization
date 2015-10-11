@@ -12,10 +12,6 @@ import java.io.IOException;
  * Compute shortest paths from a given source.
  */
 public class ShortestPathsComputation extends BasicComputation<IntWritable, IntWritable, NullWritable, IntWritable> {
-
-    private static final Logger LOG =
-            Logger.getLogger(ShortestPathsComputation.class);
-
     /**
      * The shortest paths id
      */
@@ -41,14 +37,10 @@ public class ShortestPathsComputation extends BasicComputation<IntWritable, IntW
         for (IntWritable message : messages) {
             minDist = Math.min(minDist, message.get());
         }
-        LOG.info(String.format("[-->] Vertex %s got minDist = %d vertex value = %s", vertex.getId(), minDist, vertex.getValue()));
-
         if (minDist < vertex.getValue().get()) {
             vertex.setValue(new IntWritable(minDist));
             for (Edge<IntWritable, NullWritable> edge : vertex.getEdges()) {
-                int distance = minDist + 1;
-                LOG.info(String.format("[-->] Vertex %s sent to %s = %d", vertex.getId(), edge.getTargetVertexId(), distance));
-                sendMessage(edge.getTargetVertexId(), new IntWritable(distance));
+                sendMessage(edge.getTargetVertexId(), new IntWritable(minDist + 1));
             }
         }
         vertex.voteToHalt();
