@@ -41,13 +41,13 @@ public class ShortestPathsComputation extends BasicComputation<IntWritable, IntW
         for (IntWritable message : messages) {
             minDist = Math.min(minDist, message.get());
         }
-        LOG.debug(String.format("Vertex %s got minDist = %d vertex value = %s", vertex.getId(), minDist, vertex.getValue()));
+        LOG.info(String.format("[-->] Vertex %s got minDist = %d vertex value = %s", vertex.getId(), minDist, vertex.getValue()));
 
         if (minDist < vertex.getValue().get()) {
             vertex.setValue(new IntWritable(minDist));
             for (Edge<IntWritable, NullWritable> edge : vertex.getEdges()) {
                 int distance = minDist + 1;
-                LOG.debug(String.format("Vertex %s sent to %s = %d", vertex.getId(), edge.getTargetVertexId(), distance));
+                LOG.info(String.format("[-->] Vertex %s sent to %s = %d", vertex.getId(), edge.getTargetVertexId(), distance));
                 sendMessage(edge.getTargetVertexId(), new IntWritable(distance));
             }
         }
