@@ -38,11 +38,11 @@ public class ShortestPathsComputation extends BasicComputation<IntWritable, IntW
         }
 
         if (minDist < vertex.getValue().get()) {
-            vertex.setValue(new IntWritable(minDist + 1));
+            int distance = minDist + 1;
+            vertex.setValue(new IntWritable(distance));
             for (Edge<IntWritable, NullWritable> edge : vertex.getEdges()) {
-                sendMessage(edge.getTargetVertexId(), new IntWritable(minDist));
+                sendMessage(edge.getTargetVertexId(), new IntWritable(distance));
             }
-
         }
         vertex.voteToHalt();
     }
