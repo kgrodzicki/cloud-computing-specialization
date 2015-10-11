@@ -38,7 +38,7 @@ public class ShortestPathsComputation extends BasicComputation<IntWritable, IntW
         }
 
         if (minDist < vertex.getValue().get()) {
-            vertex.setValue(new IntWritable(minDist));
+            vertex.setValue(new IntWritable(minDist + 1));
             for (Edge<IntWritable, NullWritable> edge : vertex.getEdges()) {
                 sendMessage(edge.getTargetVertexId(), new IntWritable(minDist));
             }
