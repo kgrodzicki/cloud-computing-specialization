@@ -1,0 +1,10 @@
+<configuration>
+  <property>
+    <name>mapreduce.jobtracker.address</name>
+    <value>namenode_public_dns:54311</value>
+  </property>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+</configuration>
