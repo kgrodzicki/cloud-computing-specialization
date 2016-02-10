@@ -30,3 +30,8 @@
 .idea/
 target/
 capstone/input/
+*.iml
+data/
+cassandra/
+input/
+ontime/
