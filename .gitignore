@@ -33,5 +33,4 @@ capstone/input/
 *.iml
 data/
 cassandra/
-input/
-ontime/
+input-test/

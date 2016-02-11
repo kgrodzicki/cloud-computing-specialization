@@ -1,4 +1,0 @@
-CREATE TABLE airport (
-  code text PRIMARY KEY,
-  top_carriers list<text>
-);

@@ -1,1 +1,0 @@
-CREATE TABLE meanArrDelay (   origin text,   dest text,   mean int,   PRIMARY KEY(origin, dest) );
