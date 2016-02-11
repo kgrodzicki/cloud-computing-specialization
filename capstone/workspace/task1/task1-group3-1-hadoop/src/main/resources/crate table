@@ -1,0 +1,5 @@
+CREATE TABLE airportPopularity (   code text,   popularity int, PRIMARY KEY(code, popularity))
+WITH CLUSTERING ORDER BY (popularity DESC);
+
+
+CREATE INDEX pupularity_idx ON airportPopularity (popularity);

@@ -1,0 +1,6 @@
+CREATE TABLE airport (
+  code text PRIMARY KEY,
+  top_carriers list<text>
+);
+
+alter table capstone.airport add top_dest list<text>;
