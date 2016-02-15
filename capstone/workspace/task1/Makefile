@@ -1,10 +1,6 @@
 transform-1-1-1:
-	mkdir -p /tmp/input-1-1
-	python filter_csv.py /mnt/transportation/aviation/airline_origin_destination/ /tmp/input-1-1 Origin Dest
-	hdfs dfs -mkdir /input-1-1
-	hdfs dfs -copyFromLocal /tmp/input-1-1 /
-run-1-1-1:
-	hadoop jar t111.jar TopPopularAirport /input-1-1 /output-1-1
+	mkdir -p /tmp/input-1-1-1
+	python filter_csv.py /mnt/transportation/aviation/airline_origin_destination/ /tmp/input-1-1-1 Origin Dest
 
 transform-1-1-2:
 	mkdir -p /tmp/input-1-2

@@ -1,0 +1,2 @@
+docker run -d --name zookeeper -p 2181:2181 -p 2888:2888 -p 3888:3888 jplock/zookeeper
+docker run -d --name kafkamanager -p 9000:9000 -e ZK_HOSTS="localhost:2181" -e APPLICATION_SECRET=letmein sheepkiller/kafka-manager
