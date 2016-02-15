@@ -67,7 +67,7 @@ object App {
     val lines: DStream[String] = messages.map(_._2)
 
     import Model.AirportCarrier
-    val best: DStream[(String, Seq[(String, Double)])] = lines.map { line: String =>
+    val result: DStream[(String, Seq[(String, Double)])] = lines.map { line: String =>
       // split each line
       // Origin UniqueCarrier DepDelayMinutes CarrierDelay Cancelled
       line.split(",") match {
@@ -97,9 +97,8 @@ object App {
         (airpo, tenBestCarriers)
       })
 
-    best.foreachRDD(_.saveToCassandra("capstone", "airport", SomeColumns("code", "top_carriers")))
+    result.foreachRDD(_.saveToCassandra("capstone", "airport", SomeColumns("code", "top_carriers")))
 
-    //  best.saveToC
     ssc.start()
     ssc.awaitTermination()
   }
