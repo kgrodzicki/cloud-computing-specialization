@@ -1,4 +1,4 @@
-name := "task2group2q1"
+name := "task2group2q2"
 
 version := "1.0"
 

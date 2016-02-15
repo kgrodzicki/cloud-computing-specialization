@@ -1,14 +1,13 @@
 import java.lang.System._
 
-import com.datastax.driver.core.exceptions.QueryExecutionException
+import com.datastax.driver.core.exceptions.InvalidQueryException
+import com.datastax.spark.connector._
 import com.datastax.spark.connector.cql.CassandraConnector
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.streaming.{Seconds, StreamingContext}
-
-import com.datastax.spark.connector._
 
 /**
   * @author <a href="mailto:kgrodzicki@gmail.com">Krzysztof Grodzicki</a> 13/02/16.
@@ -59,13 +58,13 @@ object App {
         session.execute(s"alter table capstone.airport add top_dest list<text>")
       }
       catch {
-        case qee: QueryExecutionException =>
+        case _: InvalidQueryException =>
         //pass as column already exists
       }
       session.execute(s"TRUNCATE capstone.airport")
     }
 
-    val ssc = new StreamingContext(conf, Seconds(5))
+    val ssc = new StreamingContext(conf, Seconds(30))
     ssc.checkpoint("checkpoint")
 
     val topicsSet = topics.split(",").toSet
@@ -85,17 +84,23 @@ object App {
       case _ => false
     }).map {
       // make a tuple for each airport
-      case a@OriginDest(origin, depDelayMinutes, dest) => (origin, (dest, depDelayMinutes.get))
+      case a@OriginDest(origin, depDelayMinutes, dest) =>
+        if (depDelayMinutes.get <= 0.0)
+        // on time
+          (origin, (dest, 1))
+        else
+          (origin, (dest, 0))
+
     }.groupByKey()
       .updateStateByKey(updateState)
       .map(a => {
         val origin: String = a._1
-        val dests: Iterable[(String, Double)] = a._2
+        val dests: Iterable[(String, Int)] = a._2
 
         val topTenDest = dests.groupBy(_._1).map(each => {
           val dest = each._1
-          val delays = each._2.map(_._2)
-          val performance: Double = (delays.sum / delays.size) * 100
+          val onTime = each._2.map(_._2)
+          val performance: Double = (onTime.sum / onTime.size.toDouble) * 100
 
           (dest, performance)
         }).toSeq.sortWith(_._2 > _._2).take(10)
@@ -110,10 +115,12 @@ object App {
 
   }
 
-  def updateState(newValues: Seq[Iterable[(String, Double)]], runningCount: Option[Iterable[(String, Double)]]): Option[Seq[(String, Double)]] = {
+  def updateState(newValues: Seq[Iterable[(String, Int)]], runningCount: Option[Iterable[(String, Int)]]): Option[Seq[(String, Int)]] = {
     runningCount match {
-      case Some(rc) => Some(newValues.flatten ++ rc)
-      case _ => Some(newValues.flatten)
+      case Some(rc) =>
+        Some(newValues.flatten ++ rc)
+      case _ =>
+        Some(newValues.flatten)
     }
   }
 }
