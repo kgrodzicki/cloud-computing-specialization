@@ -34,3 +34,4 @@ capstone/input/
 data/
 cassandra/
 input-test/
+checkpoint/
