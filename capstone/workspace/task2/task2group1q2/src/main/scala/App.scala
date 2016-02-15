@@ -1,3 +1,5 @@
+import java.lang.System._
+
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.DStream
@@ -23,14 +25,14 @@ object App {
 
   def main(args: Array[String]) {
     if (args.length < 2) {
-      System.err.println(
+      err.println(
         s"""
            |Usage: App <brokers> <topics>
            |  <brokers> is a list of one or more Kafka brokers
            |  <topics> is a list of one or more kafka topics to consume from
            |
         """.stripMargin)
-      System.exit(1)
+      exit(1)
     }
 
     val Array(brokers, topics) = args
