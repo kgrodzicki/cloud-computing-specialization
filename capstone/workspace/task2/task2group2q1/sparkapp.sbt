@@ -12,6 +12,8 @@ libraryDependencies += "org.apache.spark" % "spark-streaming-kafka_2.10" % "1.6.
 
 libraryDependencies += "org.apache.spark" % "spark-streaming_2.10" % "1.6.0"
 
+libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % "1.5.0-RC1"
+
 mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) => {
   case PathList("META-INF", xs@_*) => MergeStrategy.discard
   case x => MergeStrategy.first
