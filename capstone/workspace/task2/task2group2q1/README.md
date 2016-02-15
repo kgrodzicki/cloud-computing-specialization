@@ -1,7 +1,10 @@
 # Rank the top 10 airlines by on-time arrival performance.
 
 # Use spark-submit to run your application
-$ ./run.sh
+$ ./run.sh 192.168.99.101:9092 Topic-2-2-1
+
+# Send data to Kafka broker
+$ ./send 192.168.99.101:9092 Topic-2-2-1
 
 
 @kgrodzicki
