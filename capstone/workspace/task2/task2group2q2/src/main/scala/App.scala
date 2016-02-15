@@ -1,4 +1,5 @@
 import java.lang.System._
+import java.text.DecimalFormat
 
 import com.datastax.driver.core.exceptions.InvalidQueryException
 import com.datastax.spark.connector._
@@ -7,7 +8,7 @@ import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
 
 /**
   * @author <a href="mailto:kgrodzicki@gmail.com">Krzysztof Grodzicki</a> 13/02/16.
@@ -38,17 +39,19 @@ object App {
         """.stripMargin)
       exit(1)
     }
-
     val Array(kafkaBrokers, topics, cassandraBrokers) = args
-
+    val batchDuration: Duration = Seconds(5)
     val cassandraHost: String = cassandraBrokers.split(":")(0)
     val cassandraPort: String = cassandraBrokers.split(":")(1)
+    val keepAlliveMs = batchDuration.+(Seconds(5)).milliseconds // keep connection alive between batch sizes
+
     val conf = new SparkConf(true)
       .set("spark.cassandra.connection.host", cassandraHost)
       .set("spark.cassandra.connection.port", cassandraPort)
       .set("spark.cassandra.auth.username", "cassandra")
       .set("spark.cassandra.auth.password", "cassandra")
-      .setAppName("Spark Task 2 group 2 question 1")
+      .set("spark.cassandra.connection.keep_alive_ms", s"$keepAlliveMs")
+      .setAppName("Spark Task 2 group 2 question 2")
 
     /** Creates the keyspace and table in Cassandra. */
     CassandraConnector(conf).withSessionDo { session =>
@@ -61,10 +64,10 @@ object App {
         case _: InvalidQueryException =>
         //pass as column already exists
       }
-      session.execute(s"TRUNCATE capstone.airport")
+       session.execute(s"TRUNCATE capstone.airport")
     }
 
-    val ssc = new StreamingContext(conf, Seconds(30))
+    val ssc = new StreamingContext(conf, batchDuration)
     ssc.checkpoint("checkpoint")
 
     val topicsSet = topics.split(",").toSet
@@ -74,7 +77,8 @@ object App {
     val lines: DStream[String] = messages.map(_._2)
 
     import Model.OriginDest
-    val result: DStream[(String, Seq[(String, Double)])] = lines.map { line: String =>
+    val formatter = new DecimalFormat("#.###")
+    val result = lines.map { line: String =>
       // split each line
       line.split(",") match {
         case Array(origin, depDelayMinutes, dest) => OriginDest(origin, parseDouble(depDelayMinutes), dest)
@@ -103,7 +107,9 @@ object App {
           val performance: Double = (onTime.sum / onTime.size.toDouble) * 100
 
           (dest, performance)
-        }).toSeq.sortWith(_._2 > _._2).take(10)
+        }).toSeq.sortWith(_._2 > _._2)
+          .take(10)
+          .map(e => (e._1, formatter.format(e._2)))
 
         (origin, topTenDest)
       })
