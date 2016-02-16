@@ -4,7 +4,7 @@
 $ ./run.sh 192.168.99.101:9092 Topic-2-2-2 192.168.99.101:9042
 
 # Send data to Kafka broker
-$ ./send 192.168.99.101:9092 Topic-2-2-2
+$ ./send.sh 192.168.99.101:9092 Topic-2-2-2
 
 
 @kgrodzicki
