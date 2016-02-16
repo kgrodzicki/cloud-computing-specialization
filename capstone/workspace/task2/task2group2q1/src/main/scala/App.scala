@@ -1,9 +1,10 @@
 import java.lang.System.{err, exit}
+import java.text.DecimalFormat
 
 import _root_.kafka.serializer.StringDecoder
 import com.datastax.spark.connector.cql.CassandraConnector
 import org.apache.spark.SparkConf
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka._
 
@@ -40,14 +41,17 @@ object App {
     }
 
     val Array(kafkaBrokers, topics, cassandraBrokers) = args
-
+    val batchDuration: Duration = Seconds(5)
     val cassandraHost: String = cassandraBrokers.split(":")(0)
     val cassandraPort: String = cassandraBrokers.split(":")(1)
+    val keepAlliveMs = batchDuration.+(Seconds(5)).milliseconds // keep connection alive between batch sizes
+
     val conf = new SparkConf(true)
       .set("spark.cassandra.connection.host", cassandraHost)
       .set("spark.cassandra.connection.port", cassandraPort)
       .set("spark.cassandra.auth.username", "cassandra")
       .set("spark.cassandra.auth.password", "cassandra")
+      .set("spark.cassandra.connection.keep_alive_ms", s"$keepAlliveMs")
       .setAppName("Spark Task 2 group 2 question 1")
 
     /** Creates the keyspace and table in Cassandra. */
@@ -57,7 +61,7 @@ object App {
       session.execute(s"TRUNCATE capstone.airport")
     }
 
-    val ssc = new StreamingContext(conf, Seconds(5))
+    val ssc = new StreamingContext(conf, batchDuration)
     ssc.checkpoint("checkpoint")
 
     val topicsSet = topics.split(",").toSet
@@ -66,8 +70,9 @@ object App {
     val messages = KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, topicsSet)
     val lines: DStream[String] = messages.map(_._2)
 
+    val formatter = new DecimalFormat("#.###")
     import Model.AirportCarrier
-    val result: DStream[(String, Seq[(String, Double)])] = lines.map { line: String =>
+    val result = lines.map { line: String =>
       // split each line
       // Origin UniqueCarrier DepDelayMinutes CarrierDelay Cancelled
       line.split(",") match {
@@ -87,12 +92,13 @@ object App {
           val carrier: String = eachDelay._1
           val status: Iterable[(String, Int)] = eachDelay._2
 
-          val nrOfFlights: Double = status.map(_._2).size
+          val nrOfFlights = status.map(_._2).size
           val onTime = status.map(_._2).sum
-          (carrier, (onTime / nrOfFlights) * 100)
+          (carrier, (onTime / nrOfFlights.toDouble) * 100)
         })
           // sort it and take 10 best
           .toSeq.sortWith(_._2 > _._2).take(10)
+          .map(e => (e._1, formatter.format(e._2)))
 
         (airpo, tenBestCarriers)
       })
