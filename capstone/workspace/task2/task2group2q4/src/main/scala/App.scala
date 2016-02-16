@@ -27,7 +27,6 @@ object App {
   }
 
   def main(args: Array[String]) {
-
     if (args.length < 3) {
       err.println(
         s"""
