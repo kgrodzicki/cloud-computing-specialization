@@ -23,9 +23,9 @@ import scala.collection.mutable.ListBuffer
 /**
   * @author <a href="mailto:kgrodzicki@gmail.com">Krzysztof Grodzicki</a> 13/02/16.
   */
+//TODO [grokrz]: refactor
 object App {
-
-  val LOG = Logger.getLogger(App.getClass)
+  val logger = Logger.getLogger(App.getClass)
 
   object Model {
 
@@ -82,7 +82,7 @@ object App {
     val isSecondLegAfter12 = secondLeg.depTime >= 1200
 
     if (isFirstLegBeforeSecond && isTwoDaysDifference && isFirstLegDestEqualToSecondLegOrigin && isFirstLegBefore12 && isSecondLegAfter12) {
-      LOG.debug(firstLeg, secondLeg, isFirstLegBeforeSecond, differenceInDays(firstLeg.flightDate, secondLeg.flightDate), isFirstLegDestEqualToSecondLegOrigin)
+      logger.debug(firstLeg, secondLeg, isFirstLegBeforeSecond, differenceInDays(firstLeg.flightDate, secondLeg.flightDate), isFirstLegDestEqualToSecondLegOrigin)
       true
     } else
       false
@@ -138,7 +138,7 @@ object App {
           |  xyflightnr int,
           |  yzflightnr int,
           |  PRIMARY KEY(x, y, z, xDepDate))""".stripMargin)
-      //      session.execute(s"TRUNCATE capstone.flightxyz")
+      session.execute(s"TRUNCATE capstone.flightxyz")
       session.execute(
         """
           |CREATE TABLE IF NOT EXISTS capstone.bestbefore12 (
@@ -149,7 +149,7 @@ object App {
           |  flightNum text,
           |  arrDelay int,
           |  PRIMARY KEY(dest, flightDate, origin))""".stripMargin)
-      //      session.execute(s"TRUNCATE capstone.bestbefore12")
+      session.execute(s"TRUNCATE capstone.bestbefore12")
       session.execute(
         """
           |CREATE TABLE IF NOT EXISTS capstone.bestafter12 (
@@ -160,7 +160,7 @@ object App {
           |  flightNum text,
           |  arrDelay int,
           |  PRIMARY KEY(origin, flightDate, dest))""".stripMargin)
-      //      session.execute(s"TRUNCATE capstone.bestafter12")
+      session.execute(s"TRUNCATE capstone.bestafter12")
     }
 
     val ssc = new StreamingContext(conf, batchDuration)
@@ -206,13 +206,13 @@ object App {
 
     bestFlights.foreachRDD(rdd => {
       val flights = rdd.collect()
-      LOG.debug(s"SAVE $flights")
+      logger.debug(s"SAVE $flights")
       flights.foreach(f => {
         if (f.depTime > 1200) {
-          LOG.debug(s"BEST AFTER 12: $f , ${f.depTime}")
+          logger.debug(s"BEST AFTER 12: $f , ${f.depTime}")
           rdd.map(f => (f.origin, f.dest, formatDate(f.flightDate), f.depTime, f.flightNum, f.arrDelay)).saveToCassandra("capstone", "bestafter12", SomeColumns("origin", "dest", "flightdate", "deptime", "flightnum", "arrdelay"))
         } else {
-          LOG.debug(s"BEST BEFORE 12: $f, ${f.depTime}")
+          logger.debug(s"BEST BEFORE 12: $f, ${f.depTime}")
           rdd.map(f => (f.origin, f.dest, formatDate(f.flightDate), f.depTime, f.flightNum, f.arrDelay)).saveToCassandra("capstone", "bestbefore12", SomeColumns("origin", "dest", "flightdate", "deptime", "flightnum", "arrdelay"))
         }
       })
@@ -233,7 +233,7 @@ object App {
           val f = Flight(row.getString("origin"), row.getString("dest"), parseDate(row.getString("flightdate")), row.getInt("deptime"), row.getString("flightnum"), row.getInt("arrdelay"))
           result += f
         }
-        LOG.info(s"found before ${result.toArray.mkString(",")}")
+        logger.debug(s"found before ${result.toArray.mkString(",")}")
         result.toArray
       })
     }
@@ -241,20 +241,20 @@ object App {
     def after(origin: String, date: String): Array[Flight] = {
       cc.withSessionDo(s => {
         val query: String = s"select * from capstone.bestafter12 where origin='$origin' and flightdate='$date'"
-        LOG.info(query)
+        logger.debug(query)
         val rows: util.List[Row] = s.execute(query).all()
         var result = new ListBuffer[Flight]
         for (row: Row <- rows) {
           val f = Flight(row.getString("origin"), row.getString("dest"), parseDate(row.getString("flightdate")), row.getInt("deptime"), row.getString("flightnum"), row.getInt("arrdelay"))
           result += f
         }
-        LOG.info(s"found after ${result.toArray.mkString(",")}")
+        logger.debug(s"found after ${result.toArray.mkString(",")}")
         result.toArray
       })
     }
 
     val connections = bestFlights.flatMap(f => {
-      LOG.info(s"MERGE $f")
+      logger.debug(s"MERGE $f")
       if (f.depTime <= 1200) {
         val plus2Days: Date = addDate(f.flightDate, 2)
         after(f.dest, formatDate(plus2Days)).map(merge(f, _))
@@ -263,7 +263,7 @@ object App {
         before(f.origin, formatDate(minus2Days)).map(merge(_, f))
       }
     }).foreachRDD(rdd => {
-      LOG.info(s"SAVE")
+      logger.debug(s"SAVE")
       rdd.saveToCassandra("capstone", "flightxyz", SomeColumns("x", "y", "z", "xdepdate", "xdeptime", "ydepdate", "ydeptime", "xyflightnr", "yzflightnr"))
     })
 
@@ -282,7 +282,7 @@ object App {
   }
 
   def merge(firsLeg: Flight, secondLeg: Flight): (String, String, String, String, Int, String, Int, String, String) = {
-    LOG.info(s"MERGE $firsLeg $secondLeg")
+    logger.debug(s"MERGE $firsLeg $secondLeg")
     val x = firsLeg.origin
     val y = firsLeg.dest
     val z = secondLeg.dest
@@ -293,7 +293,7 @@ object App {
     val xyFlightNr = firsLeg.flightNum
     val yzFlightNr = secondLeg.flightNum
     val merged = (x, y, z, xDepDate, xDepTime, yDepDate, yDepTime, xyFlightNr, yzFlightNr)
-    LOG.warn(s"MERGED $merged")
+    logger.warn(s"MERGED $merged")
     merged
   }
 
