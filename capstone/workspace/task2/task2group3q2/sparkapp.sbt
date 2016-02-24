@@ -16,9 +16,12 @@ libraryDependencies += "com.datastax.spark" %% "spark-cassandra-connector" % "1.
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.6" % "test"
 
-mergeStrategy in assembly <<= (mergeStrategy in assembly) { (old) => {
-  case PathList("META-INF", xs@_*) => MergeStrategy.discard
-  case x => MergeStrategy.first
-}
-}
+assemblyShadeRules in assembly := Seq(
+  ShadeRule.rename("com.google.**" -> "shadeio.@1").inAll
+)
 
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", "MANIFEST.MF") => MergeStrategy.discard
+  case s: String if s.contains("META-INF/") && (s.contains(".SF") || s.contains(".DSA") || s.contains(".RSA")) => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}

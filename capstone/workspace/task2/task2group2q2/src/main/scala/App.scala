@@ -8,7 +8,7 @@ import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
+import org.apache.spark.streaming.{Minutes, Duration, Seconds, StreamingContext}
 
 /**
   * @author <a href="mailto:kgrodzicki@gmail.com">Krzysztof Grodzicki</a> 13/02/16.
@@ -28,18 +28,19 @@ object App {
   }
 
   def main(args: Array[String]) {
-    if (args.length < 3) {
+    if (args.length < 4) {
       err.println(
         s"""
            | Usage: App <brokers> <topics> <brokers>
            |  <brokers> is a list of one or more Kafka brokers
            |  <topics> is a list of one or more kafka topics to consume from
            |  <brokers> is a list of one or more Cassandra brokers
+           |  <timeout> await termination in minutes
            |
         """.stripMargin)
       exit(1)
     }
-    val Array(kafkaBrokers, topics, cassandraBrokers) = args
+    val Array(kafkaBrokers, topics, cassandraBrokers, timeout) = args
     val batchDuration: Duration = Seconds(5)
     val cassandraHost: String = cassandraBrokers.split(":")(0)
     val cassandraPort: String = cassandraBrokers.split(":")(1)
@@ -51,6 +52,7 @@ object App {
       .set("spark.cassandra.auth.username", "cassandra")
       .set("spark.cassandra.auth.password", "cassandra")
       .set("spark.cassandra.connection.keep_alive_ms", s"$keepAlliveMs")
+      .set("spark.cassandra.output.consistency.level", "ANY") // no need for strong consistency here
       .setAppName("Spark Task 2 group 2 question 2")
 
     /** Creates the keyspace and table in Cassandra. */
@@ -64,7 +66,7 @@ object App {
         case _: InvalidQueryException =>
         //pass as column already exists
       }
-       session.execute(s"TRUNCATE capstone.airport")
+      //       session.execute(s"TRUNCATE capstone.airport")
     }
 
     val ssc = new StreamingContext(conf, batchDuration)
@@ -117,8 +119,8 @@ object App {
     result.foreachRDD(_.saveToCassandra("capstone", "airport", SomeColumns("code", "top_dest")))
 
     ssc.start()
-    ssc.awaitTermination()
-
+    ssc.awaitTerminationOrTimeout(Minutes(timeout.toLong).milliseconds)
+    ssc.stop(stopSparkContext = true, stopGracefully = true)
   }
 
   def updateState(newValues: Seq[Iterable[(String, Int)]], runningCount: Option[Iterable[(String, Int)]]): Option[Seq[(String, Int)]] = {
